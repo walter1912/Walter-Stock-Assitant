@@ -1,0 +1,18 @@
+---
+description: Core architecture and constraints for Walter Stock Tasks
+alwaysApply: true
+---
+
+# Walter Stock Tasks
+
+Custom-distribution, extension-only Shopify app. No backend. Full map: `AGENTS.md`.
+
+- UI: Preact + Polaris web components in `extensions/app-home`. Bundle ≤ 64 KB compressed.
+- GraphQL only via `shared/utils/admin.ts` (`shopify:admin/api/2026-07/graphql.json`).
+- Inbox: `products(query: "status:active")`, then variants with inventory ≤ threshold. Never `productVariants` + `product_status`.
+- Forecast: `shared/utils/forecast.ts` from last 30 days of `orders`. Do not add ShopifyQL or `shopifyqlQuery` here.
+- State: variant `$app` metafields + app-installation JSON settings. Not `shopify.storage`.
+- Do not create draft orders or purchase orders. Status `ordered` is a flag only.
+- `s-text` uses `color="subdued"`, not `tone`.
+- Public App Store is incompatible with App Home UI extensions. Do not add App Store listing work without an iframe + backend rewrite.
+- After `shopify app dev --reset`, restore scopes `read_inventory,read_orders,write_products`.

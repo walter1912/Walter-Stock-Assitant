@@ -1,0 +1,14 @@
+---
+description: Inbox GraphQL and task metafield conventions
+globs: shared/**/*.{ts,js}
+alwaysApply: false
+---
+
+# Inbox and shared models
+
+- Load path lives in `shared/models/stockTasks.ts`. Keep ACTIVE-only `products` paging.
+- `product_status:ACTIVE,DRAFT` on `productVariants` returns empty. Do not bring it back.
+- Validate Admin GraphQL with the shopify-admin skill before adding operations.
+- Settings owner is `currentAppInstallation`. Task fields: `task_status`, `task_note`, `task_reviewed_at`, `task_owner`.
+- Pagination caps exist because the browser calls Admin API. Raise them only with a truncation banner.
+- `write_products` is required for `metafieldsSet` on variants.

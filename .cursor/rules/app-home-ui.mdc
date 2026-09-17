@@ -1,0 +1,15 @@
+---
+description: App Home UI extension patterns
+globs: extensions/app-home/**/*.{jsx,js}
+alwaysApply: false
+---
+
+# App Home UI
+
+- Entry: `extensions/app-home/src/AppHome.jsx` (`admin.app.home.render`).
+- Share inbox state through `store.js`. Do not refetch on every page.
+- Polaris web components only. Toast via `shopify.toast.show`.
+- `s-text` subdued color is `color="subdued"`.
+- Routes: `/`, `/task/:id`, `/weekly-review`, `/settings`.
+- English UI copy. Keep screens simple; bundle size is tight.
+- Sidekick tools in `extensions/app-tools` are read-only. Point merchants at App Home to edit tasks.

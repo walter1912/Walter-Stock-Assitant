@@ -1,0 +1,104 @@
+[
+  {
+    "$schema": "https://extensions.shopifycdn.com/shopifycloud/schemas/v1/tool.json",
+    "name": "list_stock_tasks",
+    "description": "List the low stock task inbox, most urgent first, with days left and a suggested reorder quantity for each variant",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "only_urgent": {
+          "type": "boolean",
+          "description": "When true, return only the variants that are selling and about to run out"
+        },
+        "limit": {
+          "type": "number",
+          "description": "Maximum number of tasks to return. Defaults to 20."
+        }
+      },
+      "required": []
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "results": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": { "type": "string", "description": "Always 'resource_link'" },
+              "uri": { "type": "string", "description": "GID URI of the stock task" },
+              "name": { "type": "string", "description": "Product and variant name" },
+              "mimeType": { "type": "string", "description": "MIME type for this resource" },
+              "_meta": {
+                "type": "object",
+                "description": "Stock and workflow details for the variant",
+                "properties": {
+                  "sku": { "type": "string", "description": "Variant SKU" },
+                  "status": { "type": "string", "description": "Workflow status: new, in_progress, reviewed, or ordered" },
+                  "owner": { "type": "string", "description": "Who is handling the restock" },
+                  "note": { "type": "string", "description": "Internal note about this variant" },
+                  "inventory": { "type": "number", "description": "Units available across all locations" },
+                  "urgency": { "type": "string", "description": "How soon the variant runs out" },
+                  "sales_summary": { "type": "string", "description": "Average units sold per day" },
+                  "days_left": { "type": "string", "description": "Estimated days until stockout" },
+                  "reorder_summary": { "type": "string", "description": "Plain language reorder suggestion" },
+                  "suggested_reorder_quantity": { "type": "number", "description": "Units to order now" }
+                }
+              }
+            },
+            "required": ["type", "uri", "name", "mimeType"]
+          }
+        }
+      }
+    }
+  },
+  {
+    "$schema": "https://extensions.shopifycdn.com/shopifycloud/schemas/v1/tool.json",
+    "name": "get_stock_task",
+    "description": "Get the stock task for a single product variant, including its workflow status, note, and reorder suggestion",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The product variant GID or its numeric id"
+        }
+      },
+      "required": ["id"]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "results": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": { "type": "string", "description": "Always 'resource_link'" },
+              "uri": { "type": "string", "description": "GID URI of the stock task" },
+              "name": { "type": "string", "description": "Product and variant name" },
+              "mimeType": { "type": "string", "description": "MIME type for this resource" },
+              "_meta": {
+                "type": "object",
+                "description": "Stock and workflow details for the variant",
+                "properties": {
+                  "sku": { "type": "string", "description": "Variant SKU" },
+                  "status": { "type": "string", "description": "Workflow status: new, in_progress, reviewed, or ordered" },
+                  "owner": { "type": "string", "description": "Who is handling the restock" },
+                  "note": { "type": "string", "description": "Internal note about this variant" },
+                  "inventory": { "type": "number", "description": "Units available across all locations" },
+                  "urgency": { "type": "string", "description": "How soon the variant runs out" },
+                  "sales_summary": { "type": "string", "description": "Average units sold per day" },
+                  "days_left": { "type": "string", "description": "Estimated days until stockout" },
+                  "reorder_summary": { "type": "string", "description": "Plain language reorder suggestion" },
+                  "suggested_reorder_quantity": { "type": "number", "description": "Units to order now" }
+                }
+              }
+            },
+            "required": ["type", "uri", "name", "mimeType"]
+          }
+        }
+      }
+    }
+  }
+]
