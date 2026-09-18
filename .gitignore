@@ -23,6 +23,10 @@ lerna-debug.log*
 dist
 shared/types/graphql
 *.local
+/.cache
+/build
+.react-router/
+prisma/
 
 # Editor directories and files
 .vscode/*

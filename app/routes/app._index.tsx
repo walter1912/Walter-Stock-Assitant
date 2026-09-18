@@ -1,44 +1,84 @@
-import {useMemo, useState} from 'preact/hooks';
+import { useEffect, useMemo, useState } from "react";
+import type {
+  ActionFunctionArgs,
+  HeadersFunction,
+} from "react-router";
+import { useFetcher, useRevalidator, useRouteLoaderData } from "react-router";
+import { useAppBridge } from "@shopify/app-bridge-react";
+import { boundary } from "@shopify/shopify-app-react-router/server";
+
 import {
   applyFilters,
   ownersOf,
+  saveTask,
   topRevenueAtRisk,
   STATUS_LABELS,
   STATUS_TONES,
   TASK_STATUSES,
-} from '../../../../shared/models/stockTasks';
+  nowForMetafield,
+  type QuickFilter,
+  type StockTask,
+  type TaskStatus,
+} from "../../shared/models/stockTasks";
 import {
   RISK_LABELS,
   RISK_TONES,
   formatDaysLeft,
-} from '../../../../shared/utils/forecast';
-import {gidToId} from '../../../../shared/utils/gid';
-import {useStore, refresh, markReviewed, setSimpleMode} from '../store';
+  type RiskLevel,
+} from "../../shared/utils/forecast";
+import { gidToId } from "../../shared/utils/gid";
+import { fetchSettings, saveSettings } from "../../shared/models/settings";
+import { authenticatedQuery, type AppData } from "../inbox.server";
 
-/** @typedef {import('../../../../shared/models/stockTasks').StockTask} StockTask */
-
-const QUICK_FILTERS = [
-  {id: 'all', label: 'Everything'},
-  {id: 'act_now', label: 'Might cost me sales'},
-  {id: 'can_ignore', label: 'Can ignore this week'},
+const QUICK_FILTERS: { id: QuickFilter; label: string }[] = [
+  { id: "all", label: "Everything" },
+  { id: "act_now", label: "Might cost me sales" },
+  { id: "can_ignore", label: "Can ignore this week" },
 ];
 
-const RISK_OPTIONS = ['critical', 'high', 'medium', 'low', 'none'];
+const RISK_OPTIONS: RiskLevel[] = ["critical", "high", "medium", "low", "none"];
+
+export const action = async ({ request }: ActionFunctionArgs) => {
+  const { query } = await authenticatedQuery(request);
+  const form = await request.formData();
+  const intent = String(form.get("intent") ?? "");
+
+  if (intent === "markReviewed") {
+    await saveTask(
+      String(form.get("variantId")),
+      { status: "reviewed", reviewedAt: nowForMetafield() },
+      query,
+    );
+    return { ok: true, intent };
+  }
+
+  if (intent === "setSimpleMode") {
+    const settings = await fetchSettings(query);
+    await saveSettings(
+      { ...settings, simpleMode: form.get("simpleMode") === "true" },
+      query,
+    );
+    return { ok: true, intent };
+  }
+
+  return { ok: false };
+};
 
 export default function InboxPage() {
-  const {status, settings, inbox, error} = useStore();
+  const { settings, inbox } = useRouteLoaderData("routes/app") as AppData;
+  const fetcher = useFetcher<typeof action>();
+  const revalidator = useRevalidator();
+  const shopify = useAppBridge();
 
-  const [quick, setQuick] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [riskFilter, setRiskFilter] = useState('all');
-  const [ownerFilter, setOwnerFilter] = useState('');
-  const [search, setSearch] = useState('');
-  const [busyId, setBusyId] = useState(null);
+  const [quick, setQuick] = useState<QuickFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<TaskStatus | "all">("all");
+  const [riskFilter, setRiskFilter] = useState<RiskLevel | "all">("all");
+  const [ownerFilter, setOwnerFilter] = useState("");
+  const [search, setSearch] = useState("");
 
-  const tasks = inbox?.tasks ?? [];
+  const tasks = inbox.tasks;
   const owners = useMemo(() => ownersOf(tasks), [tasks]);
   const topAtRisk = useMemo(() => topRevenueAtRisk(tasks), [tasks]);
-
   const visible = useMemo(
     () =>
       applyFilters(tasks, {
@@ -52,54 +92,64 @@ export default function InboxPage() {
   );
 
   const simple = settings.simpleMode;
-  const loading = status === 'loading' || status === 'idle';
+  const loading = revalidator.state === "loading";
+  const busyId =
+    fetcher.state !== "idle" && fetcher.formData?.get("intent") === "markReviewed"
+      ? String(fetcher.formData.get("variantId"))
+      : null;
 
-  const handleReview = async (task) => {
-    setBusyId(task.variantId);
-    try {
-      await markReviewed(task);
-      shopify.toast.show('Marked as reviewed');
-    } catch (reviewError) {
-      shopify.toast.show(
-        reviewError instanceof Error ? reviewError.message : 'Could not save',
-        {isError: true},
-      );
-    } finally {
-      setBusyId(null);
+  useEffect(() => {
+    if (fetcher.state !== "idle" || !fetcher.data?.ok) return;
+    if (fetcher.data.intent === "markReviewed") {
+      shopify.toast.show("Marked as reviewed");
     }
+  }, [fetcher.state, fetcher.data, shopify]);
+
+  const handleReview = (task: StockTask) => {
+    fetcher.submit(
+      { intent: "markReviewed", variantId: task.variantId },
+      { method: "POST" },
+    );
+  };
+
+  const handleSimpleMode = (checked: boolean) => {
+    fetcher.submit(
+      { intent: "setSimpleMode", simpleMode: String(checked) },
+      { method: "POST" },
+    );
   };
 
   return (
-    <s-page heading="Stock tasks">
+    <s-page heading="stock assistant">
       <s-button
         slot="primary-action"
         variant="primary"
-        loading={loading}
-        onClick={() => refresh()}
+        {...(loading ? { loading: true } : {})}
+        onClick={() => revalidator.revalidate()}
       >
         Refresh
       </s-button>
-      <s-link slot="secondary-actions" href="/weekly-review">
+      <s-link slot="secondary-actions" href="/app/weekly-review">
         Weekly review
       </s-link>
 
-      {error && (
-        <s-section>
-          <s-banner tone="critical" heading="Could not load your stock tasks">
-            <s-paragraph>{error}</s-paragraph>
-            <s-button slot="primary-action" onClick={() => refresh()}>
-              Try again
-            </s-button>
-          </s-banner>
-        </s-section>
-      )}
-
-      {inbox?.truncatedVariants && (
+      {inbox.truncatedVariants && (
         <s-section>
           <s-banner tone="warning" heading="Showing your lowest stock items only">
             <s-paragraph>
               This store has more items below {settings.threshold} than the app
               loads at once. Lower the threshold in Settings to narrow the list.
+            </s-paragraph>
+          </s-banner>
+        </s-section>
+      )}
+
+      {inbox.truncatedOrders && (
+        <s-section>
+          <s-banner tone="warning" heading="Sales window is truncated">
+            <s-paragraph>
+              The last 30 days of orders did not all fit in one load. Velocity
+              for some variants may be under-counted.
             </s-paragraph>
           </s-banner>
         </s-section>
@@ -113,7 +163,7 @@ export default function InboxPage() {
           <s-stack direction="block" gap="small-200">
             {topAtRisk.map((task) => (
               <s-stack key={task.variantId} direction="block">
-                <s-link href={`/task/${gidToId(task.variantId)}`}>
+                <s-link href={`/app/task/${gidToId(task.variantId)}`}>
                   {task.displayTitle}
                 </s-link>
                 <s-text color="subdued">
@@ -130,11 +180,7 @@ export default function InboxPage() {
           label="Simple mode"
           details="Show only the product, days left, and how many to order."
           checked={simple}
-          onChange={(event) => {
-            setSimpleMode(event.target.checked).catch(() =>
-              shopify.toast.show('Could not save your view', {isError: true}),
-            );
-          }}
+          onChange={(event) => handleSimpleMode(event.currentTarget.checked)}
         />
       </s-section>
 
@@ -144,7 +190,7 @@ export default function InboxPage() {
             {QUICK_FILTERS.map((option) => (
               <s-button
                 key={option.id}
-                variant={quick === option.id ? 'primary' : 'secondary'}
+                variant={quick === option.id ? "primary" : "secondary"}
                 onClick={() => setQuick(option.id)}
               >
                 {option.label}
@@ -158,13 +204,15 @@ export default function InboxPage() {
               labelAccessibilityVisibility="visible"
               placeholder="Product or SKU"
               value={search}
-              onInput={(event) => setSearch(event.target.value)}
+              onInput={(event) => setSearch(event.currentTarget.value)}
             />
             <s-select
               label="Status"
               labelAccessibilityVisibility="visible"
               value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value)}
+              onChange={(event) =>
+                setStatusFilter(event.currentTarget.value as TaskStatus | "all")
+              }
             >
               <s-option value="all">Any status</s-option>
               {TASK_STATUSES.map((value) => (
@@ -177,7 +225,9 @@ export default function InboxPage() {
               label="Urgency"
               labelAccessibilityVisibility="visible"
               value={riskFilter}
-              onChange={(event) => setRiskFilter(event.target.value)}
+              onChange={(event) =>
+                setRiskFilter(event.currentTarget.value as RiskLevel | "all")
+              }
             >
               <s-option value="all">Any urgency</s-option>
               {RISK_OPTIONS.map((value) => (
@@ -190,7 +240,7 @@ export default function InboxPage() {
               label="Owner"
               labelAccessibilityVisibility="visible"
               value={ownerFilter}
-              onChange={(event) => setOwnerFilter(event.target.value)}
+              onChange={(event) => setOwnerFilter(event.currentTarget.value)}
             >
               <s-option value="">Anyone</s-option>
               {owners.map((value) => (
@@ -203,8 +253,8 @@ export default function InboxPage() {
         </s-stack>
       </s-section>
 
-      {loading && (
-        <s-section accessibilityLabel="Loading stock tasks">
+      {loading && tasks.length === 0 && (
+        <s-section accessibilityLabel="Loading stock assistant">
           <s-stack direction="inline" gap="base" alignItems="center">
             <s-spinner accessibilityLabel="Loading" />
             <s-text>Working out what needs restocking...</s-text>
@@ -212,25 +262,24 @@ export default function InboxPage() {
         </s-section>
       )}
 
-      {!loading && tasks.length === 0 && !error && (
+      {tasks.length === 0 && (
         <s-section accessibilityLabel="Nothing to restock">
           <s-stack direction="block" gap="base" alignItems="center">
             <s-heading>Nothing is running low</s-heading>
             <s-paragraph>
-              No active product has a variant at or below{' '}
-              {settings.threshold} units. Drafts are ignored. Raise the
-              threshold in Settings to keep an eye on more items.
+              No active product has a variant at or below {settings.threshold}{" "}
+              units. Drafts are ignored. Raise the threshold in Settings to keep
+              an eye on more items.
             </s-paragraph>
-            <s-button href="/settings">Open settings</s-button>
+            <s-button href="/app/settings">Open settings</s-button>
           </s-stack>
         </s-section>
       )}
 
-      {!loading && tasks.length > 0 && visible.length === 0 && (
+      {tasks.length > 0 && visible.length === 0 && (
         <s-section>
           <s-paragraph>
-            No task matches these filters. Try "Everything" to see all
-            {' '}
+            No task matches these filters. Try &quot;Everything&quot; to see all{" "}
             {tasks.length} tasks.
           </s-paragraph>
         </s-section>
@@ -240,7 +289,7 @@ export default function InboxPage() {
         <s-section
           padding="none"
           heading={`${visible.length} of ${tasks.length} tasks`}
-          accessibilityLabel="Stock tasks table"
+          accessibilityLabel="stock assistant table"
         >
           <s-table>
             <s-table-header-row>
@@ -258,10 +307,12 @@ export default function InboxPage() {
                 <s-table-row key={task.variantId}>
                   <s-table-cell>
                     <s-stack direction="block">
-                      <s-link href={`/task/${gidToId(task.variantId)}`}>
+                      <s-link href={`/app/task/${gidToId(task.variantId)}`}>
                         {task.displayTitle}
                       </s-link>
-                      {task.sku && <s-text color="subdued">{task.sku}</s-text>}
+                      {task.sku && (
+                        <s-text color="subdued">{task.sku}</s-text>
+                      )}
                       {!task.tracked && (
                         <s-text color="subdued">
                           Quantity is not tracked on this variant
@@ -275,7 +326,7 @@ export default function InboxPage() {
                   <s-table-cell>
                     {task.forecast.reorderQty > 0
                       ? `${task.forecast.reorderQty}`
-                      : '-'}
+                      : "-"}
                   </s-table-cell>
                   {!simple && (
                     <s-table-cell>
@@ -289,7 +340,7 @@ export default function InboxPage() {
                     <s-table-cell>
                       {task.forecast.velocity > 0
                         ? task.forecast.velocity.toFixed(1)
-                        : '0'}
+                        : "0"}
                     </s-table-cell>
                   )}
                   {!simple && (
@@ -303,8 +354,8 @@ export default function InboxPage() {
                     <s-table-cell>
                       <s-button
                         variant="tertiary"
-                        loading={busyId === task.variantId}
-                        disabled={task.status === 'reviewed'}
+                        {...(busyId === task.variantId ? { loading: true } : {})}
+                        disabled={task.status === "reviewed"}
                         onClick={() => handleReview(task)}
                       >
                         Mark reviewed
@@ -320,3 +371,7 @@ export default function InboxPage() {
     </s-page>
   );
 }
+
+export const headers: HeadersFunction = (headersArgs) => {
+  return boundary.headers(headersArgs);
+};

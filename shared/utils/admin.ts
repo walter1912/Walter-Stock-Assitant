@@ -2,14 +2,16 @@ const API_VERSION = "2026-07";
 
 export class AdminApiError extends Error {}
 
-/**
- * Direct API access: calls from an App Home UI extension to
- * shopify:admin are authenticated for us, so there is no token to manage.
- */
-export async function adminQuery<T = any>(
+export type AdminQueryFn = (
   query: string,
   variables?: Record<string, unknown>,
-): Promise<T> {
+) => Promise<any>;
+
+/**
+ * Direct API access for Sidekick / admin extensions.
+ * The iframe Remix app uses createAdminQuery() with a session.
+ */
+export const adminQuery: AdminQueryFn = async (query, variables) => {
   const response = await fetch(`shopify:admin/api/${API_VERSION}/graphql.json`, {
     method: "POST",
     body: JSON.stringify({ query, variables }),
@@ -25,8 +27,8 @@ export async function adminQuery<T = any>(
     throw new AdminApiError(json.errors[0].message ?? "Admin API error");
   }
 
-  return json.data as T;
-}
+  return json.data;
+};
 
 /** userErrors are returned in the payload, not thrown, so surface them. */
 export function throwUserErrors(

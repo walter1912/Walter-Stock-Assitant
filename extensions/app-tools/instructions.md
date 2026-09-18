@@ -12,7 +12,7 @@ Use these tools when the merchant asks about:
 - `days_left` and `suggested_reorder_quantity` are estimates from the last 30 days of sales, the merchant's supplier lead time, and their buffer stock setting. Present them as estimates, not guarantees.
 - `status` tracks the restock workflow: `new` means nobody has looked at it yet, then `in_progress`, `reviewed`, and `ordered`.
 - A variant with no sales in the last 30 days has no stockout estimate. Don't claim it is urgent just because stock is low.
-- These tools are read-only. To change a status or add a note, point the merchant to the app's Stock tasks page.
+- These tools are read-only. To change a status or add a note, point the merchant to the app's stock assistant page.
 
 ## Common Workflows
 
