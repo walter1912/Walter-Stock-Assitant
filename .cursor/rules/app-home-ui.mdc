@@ -1,15 +1,15 @@
 ---
-description: App Home UI extension patterns
-globs: extensions/app-home/**/*.{jsx,js}
+description: App Home iframe patterns
+globs: app/routes/app*.tsx
 alwaysApply: false
 ---
 
 # App Home UI
 
-- Entry: `extensions/app-home/src/AppHome.jsx` (`admin.app.home.render`).
-- Share inbox state through `store.js`. Do not refetch on every page.
-- Polaris web components only. Toast via `shopify.toast.show`.
+- Entry: `app/routes/app.tsx` (iframe + AppProvider + `s-app-nav`).
+- Load inbox once in the `app` layout loader (`app/inbox.server.ts`). Child pages read `useRouteLoaderData("routes/app")`.
+- Polaris web components only. Toast via `useAppBridge().toast.show`.
 - `s-text` subdued color is `color="subdued"`.
-- Routes: `/`, `/task/:id`, `/weekly-review`, `/settings`.
-- English UI copy. Keep screens simple; bundle size is tight.
+- Routes: `/app`, `/app/task/:id`, `/app/weekly-review`, `/app/settings`.
+- English UI copy.
 - Sidekick tools in `extensions/app-tools` are read-only. Point merchants at App Home to edit tasks.

@@ -18,11 +18,16 @@ lerna-debug.log*
 # Environment variables
 .env
 .env.*
+!.env.example
 
 # Build
 dist
 shared/types/graphql
 *.local
+/.cache
+/build
+.react-router/
+prisma/
 
 # Editor directories and files
 .vscode/*

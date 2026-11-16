@@ -1,4 +1,4 @@
-import { adminQuery, throwUserErrors } from "../utils/admin";
+import { adminQuery as defaultAdminQuery, throwUserErrors, type AdminQueryFn } from "../utils/admin";
 
 /**
  * Settings the merchant fills in once. Stored as a single app-owned metafield
@@ -65,12 +65,10 @@ function coerce(raw: unknown): Settings {
   };
 }
 
-let installationId: string | null = null;
-
-export async function fetchSettings(): Promise<Settings> {
+export async function fetchSettings(
+  adminQuery: AdminQueryFn = defaultAdminQuery,
+): Promise<Settings> {
   const data = await adminQuery(SETTINGS_QUERY);
-  installationId = data.currentAppInstallation?.id ?? null;
-
   const raw = data.currentAppInstallation?.metafield?.value;
   if (!raw) return { ...DEFAULT_SETTINGS };
 
@@ -81,16 +79,17 @@ export async function fetchSettings(): Promise<Settings> {
   }
 }
 
-export async function saveSettings(settings: Settings): Promise<void> {
-  if (!installationId) {
-    // Saving before the first read: resolve the owner id first.
-    await fetchSettings();
-  }
+export async function saveSettings(
+  settings: Settings,
+  adminQuery: AdminQueryFn = defaultAdminQuery,
+): Promise<void> {
+  const data = await adminQuery(SETTINGS_QUERY);
+  const installationId = data.currentAppInstallation?.id;
   if (!installationId) {
     throw new Error("Could not resolve the app installation");
   }
 
-  const data = await adminQuery(SETTINGS_MUTATION, {
+  const result = await adminQuery(SETTINGS_MUTATION, {
     metafields: [
       {
         ownerId: installationId,
@@ -102,5 +101,5 @@ export async function saveSettings(settings: Settings): Promise<void> {
     ],
   });
 
-  throwUserErrors(data.metafieldsSet);
+  throwUserErrors(result.metafieldsSet);
 }

@@ -1,0 +1,78 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "dea2ee8bdaf09bea166cbd755fd9bb08"
+name = "Walter Stock Assitant - Dev"
+application_url = "https://228b-27-72-144-86.ngrok-free.app"
+embedded = true
+
+[sidekick]
+extensions_summary = "Read the low stock task inbox and restock suggestions"
+
+[variant.metafields.app.task_status]
+name = "Stock task status"
+description = "Where this variant sits in the restock workflow: new, in_progress, reviewed, ordered"
+type = "single_line_text_field"
+
+  [variant.metafields.app.task_status.access]
+  admin = "merchant_read_write"
+
+[variant.metafields.app.task_note]
+name = "Stock task note"
+description = "Internal note about restocking this variant"
+type = "multi_line_text_field"
+
+  [variant.metafields.app.task_note.access]
+  admin = "merchant_read_write"
+
+[variant.metafields.app.task_reviewed_at]
+name = "Stock task reviewed at"
+description = "When someone last reviewed this variant's stock level"
+type = "date_time"
+
+  [variant.metafields.app.task_reviewed_at.access]
+  admin = "merchant_read_write"
+
+[variant.metafields.app.task_owner]
+name = "Stock task owner"
+description = "Who is responsible for restocking this variant"
+type = "single_line_text_field"
+
+  [variant.metafields.app.task_owner.access]
+  admin = "merchant_read_write"
+
+[access.admin]
+direct_api_mode = "online"
+embedded_app_direct_api_access = true
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "read_inventory,read_orders,write_products"
+
+[auth]
+redirect_urls = [ "https://228b-27-72-144-86.ngrok-free.app/auth/callback" ]
+
+[webhooks]
+api_version = "2026-10"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/uninstalled" ]
+  uri = "/webhooks/app/uninstalled"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/scopes_update" ]
+  uri = "/webhooks/app/scopes_update"
+
+  [[webhooks.subscriptions]]
+  compliance_topics = [ "customers/data_request" ]
+  uri = "/webhooks/customers/data_request"
+
+  [[webhooks.subscriptions]]
+  compliance_topics = [ "customers/redact" ]
+  uri = "/webhooks/customers/redact"
+
+  [[webhooks.subscriptions]]
+  compliance_topics = [ "shop/redact" ]
+  uri = "/webhooks/shop/redact"
+
+[build]
+automatically_update_urls_on_dev = false

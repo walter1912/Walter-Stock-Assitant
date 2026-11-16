@@ -2,25 +2,34 @@
 
 client_id = "85a11846d2a1bab5f310a03b114e564b"
 name = "Walter Stock Assitant"
-application_url = "https://shopify.dev/apps/default-app-home"
+application_url = "https://228b-27-72-144-86.ngrok-free.app"
 embedded = true
-
-[build]
-automatically_update_urls_on_dev = true
 
 [webhooks]
 api_version = "2026-10"
 
-[access.admin]
-direct_api_mode = "online"
-embedded_app_direct_api_access = true
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/app/scopes_update"
+  topics = [ "app/scopes_update" ]
 
-[access_scopes]
-# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "read_inventory,read_orders,write_products"
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/app/uninstalled"
+  topics = [ "app/uninstalled" ]
 
-[auth]
-redirect_urls = [ "https://shopify.dev/apps/default-app-home/api/auth" ]
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/customers/data_request"
+  compliance_topics = [ "customers/data_request" ]
+
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/customers/redact"
+  compliance_topics = [ "customers/redact" ]
+
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/shop/redact"
+  compliance_topics = [ "shop/redact" ]
+
+[sidekick]
+extensions_summary = "Read the low stock task inbox and restock suggestions"
 
 [variant.metafields.app.task_status]
 name = "Stock task status"
@@ -54,5 +63,13 @@ type = "single_line_text_field"
   [variant.metafields.app.task_owner.access]
   admin = "merchant_read_write"
 
-[sidekick]
-extensions_summary = "Read the low stock task inbox and restock suggestions"
+[access.admin]
+direct_api_mode = "online"
+embedded_app_direct_api_access = true
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "read_inventory,read_orders,write_products"
+
+[auth]
+redirect_urls = [ "https://228b-27-72-144-86.ngrok-free.app/auth/callback" ]

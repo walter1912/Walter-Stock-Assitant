@@ -1,4 +1,4 @@
-import { adminQuery, throwUserErrors } from "../utils/admin";
+import { adminQuery as defaultAdminQuery, throwUserErrors, type AdminQueryFn } from "../utils/admin";
 import {
   forecast,
   riskRank,
@@ -24,12 +24,12 @@ export const STATUS_LABELS: Record<TaskStatus, string> = {
   ordered: "Ordered",
 };
 
-export const STATUS_TONES: Record<TaskStatus, string> = {
+export const STATUS_TONES = {
   new: "critical",
   in_progress: "caution",
   reviewed: "info",
   ordered: "success",
-};
+} as const;
 
 export interface StockTask {
   variantId: string;
@@ -61,8 +61,8 @@ export interface Inbox {
 }
 
 /**
- * Guardrails for a no-backend app: we page through the Admin API from the
- * browser, so cap the work instead of hanging on a huge catalogue.
+ * Guardrails: page the Admin API with a cap so a huge catalogue cannot hang
+ * the inbox load.
  */
 const PRODUCT_PAGE_SIZE = 50;
 const MAX_PRODUCT_PAGES = 5;
@@ -154,7 +154,7 @@ function metafieldMap(nodes: { key: string; value: string }[] | undefined) {
 }
 
 /** Units sold per variant over the velocity window. */
-async function fetchSoldQuantities(): Promise<{
+async function fetchSoldQuantities(adminQuery: AdminQueryFn): Promise<{
   sold: Map<string, number>;
   truncated: boolean;
 }> {
@@ -165,7 +165,7 @@ async function fetchSoldQuantities(): Promise<{
   let truncated = false;
 
   for (let page = 0; page < MAX_ORDER_PAGES; page++) {
-    const data = await adminQuery(RECENT_ORDERS_QUERY, {
+    const data: any = await adminQuery(RECENT_ORDERS_QUERY, {
       q,
       first: ORDER_PAGE_SIZE,
       after,
@@ -193,19 +193,22 @@ async function fetchSoldQuantities(): Promise<{
   return { sold, truncated };
 }
 
-export async function loadInbox(settings: Settings): Promise<Inbox> {
-  const { sold, truncated: truncatedOrders } = await fetchSoldQuantities();
+export async function loadInbox(
+  settings: Settings,
+  adminQuery: AdminQueryFn = defaultAdminQuery,
+): Promise<Inbox> {
+  const { sold, truncated: truncatedOrders } = await fetchSoldQuantities(adminQuery);
   const threshold = Math.max(0, Math.floor(settings.threshold));
 
   // productVariants search cannot filter ACTIVE reliably (product_status:ACTIVE,DRAFT
   // returns no rows). products(query: "status:active") does, which we confirmed
-  // against this store's catalog. https://shopify.dev/docs/api/admin-graphql/2026-07/queries/products
+  // against this store's catalog. https://shopify.dev/docs/api/admin-graphql/2026-10/queries/products
   const tasks: StockTask[] = [];
   let after: string | null = null;
   let truncatedVariants = false;
 
   for (let page = 0; page < MAX_PRODUCT_PAGES; page++) {
-    const data = await adminQuery(ACTIVE_PRODUCTS_QUERY, {
+    const data: any = await adminQuery(ACTIVE_PRODUCTS_QUERY, {
       q: "status:active",
       first: PRODUCT_PAGE_SIZE,
       after,
@@ -389,6 +392,7 @@ export function nowForMetafield(): string {
 export async function saveTask(
   variantId: string,
   patch: TaskPatch,
+  adminQuery: AdminQueryFn = defaultAdminQuery,
 ): Promise<void> {
   const metafields: Record<string, unknown>[] = [];
   const push = (key: string, type: string, value: string) =>

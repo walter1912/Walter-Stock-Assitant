@@ -53,13 +53,13 @@ export const RISK_LABELS: Record<RiskLevel, string> = {
 };
 
 /** Polaris badge tones, so the inbox reads as a traffic light. */
-export const RISK_TONES: Record<RiskLevel, string> = {
+export const RISK_TONES = {
   critical: "critical",
   high: "warning",
   medium: "caution",
   low: "success",
   none: "neutral",
-};
+} as const;
 
 function classifyRisk(inventory: number, daysToStockout: number | null): RiskLevel {
   if (inventory <= 0) return "critical";
