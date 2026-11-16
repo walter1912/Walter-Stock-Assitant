@@ -2,7 +2,7 @@
 
 client_id = "85a11846d2a1bab5f310a03b114e564b"
 name = "Walter Stock Assitant"
-application_url = "https://228b-27-72-144-86.ngrok-free.app"
+application_url = "https://walter-stock-assitant.onrender.com"
 embedded = true
 
 [webhooks]
@@ -72,4 +72,8 @@ embedded_app_direct_api_access = true
 scopes = "read_inventory,read_orders,write_products"
 
 [auth]
-redirect_urls = [ "https://228b-27-72-144-86.ngrok-free.app/auth/callback" ]
+redirect_urls = [
+    "https://walter-stock-assitant.onrender.com/auth/callback",
+    "https://walter-stock-assitant.onrender.com/auth/shopify/callback",
+    "https://walter-stock-assitant.onrender.com/api/auth/callback"
+]
