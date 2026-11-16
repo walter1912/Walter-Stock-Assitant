@@ -77,7 +77,7 @@ If a human wants a store-level sales report (GraphiQL / Explore), a valid Shopif
 FROM sales SHOW total_sales, orders TIMESERIES month SINCE -12m UNTIL today
 ```
 
-Docs: [ShopifyQL](https://shopify.dev/docs/api/shopifyql/2026-07).
+Docs: [ShopifyQL](https://shopify.dev/docs/api/shopifyql/2026-10).
 
 ## Data storage (metafields)
 

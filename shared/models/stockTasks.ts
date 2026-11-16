@@ -202,7 +202,7 @@ export async function loadInbox(
 
   // productVariants search cannot filter ACTIVE reliably (product_status:ACTIVE,DRAFT
   // returns no rows). products(query: "status:active") does, which we confirmed
-  // against this store's catalog. https://shopify.dev/docs/api/admin-graphql/2026-07/queries/products
+  // against this store's catalog. https://shopify.dev/docs/api/admin-graphql/2026-10/queries/products
   const tasks: StockTask[] = [];
   let after: string | null = null;
   let truncatedVariants = false;

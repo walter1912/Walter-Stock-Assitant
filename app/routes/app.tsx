@@ -4,6 +4,7 @@ import { boundary } from "@shopify/shopify-app-react-router/server";
 import { AppProvider } from "@shopify/shopify-app-react-router/react";
 
 import { loadAuthenticatedInbox, type AppData } from "../inbox.server";
+import { POLARIS_URL } from "../polaris";
 
 export const loader = async ({ request }: LoaderFunctionArgs): Promise<AppData> => {
   const { settings, inbox } = await loadAuthenticatedInbox(request);
@@ -19,7 +20,7 @@ export default function App() {
   const { apiKey } = useLoaderData<typeof loader>();
 
   return (
-    <AppProvider embedded apiKey={apiKey}>
+    <AppProvider apiKey={apiKey} polarisUrl={POLARIS_URL}>
       <s-app-nav>
         <s-link href="/app">stock assistant</s-link>
         <s-link href="/app/weekly-review">Weekly review</s-link>

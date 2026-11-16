@@ -12,7 +12,11 @@ function createMongoSessionStorage() {
   const raw = process.env.MONGODB_URI || DEFAULT_URI;
   const url = new URL(raw);
   const fromPath = url.pathname.replace(/^\//, "").split("/")[0];
-  const dbName = process.env.MONGODB_DB || fromPath || DEFAULT_DB;
+  const dbName =
+    process.env.MONGODB_DATABASE ||
+    process.env.MONGODB_DB ||
+    fromPath ||
+    DEFAULT_DB;
 
   return new MongoDBSessionStorage(url, dbName);
 }

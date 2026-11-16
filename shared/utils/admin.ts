@@ -1,4 +1,4 @@
-const API_VERSION = "2026-07";
+const API_VERSION = "2026-10";
 
 export class AdminApiError extends Error {}
 
