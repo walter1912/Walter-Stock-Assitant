@@ -141,6 +141,23 @@ const SAVE_TASK_MUTATION = `#graphql
     }
   }`;
 
+// metafieldsSet rejects blank values, so a cleared note/owner deletes the metafield.
+// https://shopify.dev/docs/api/admin-graphql/2026-10/mutations/metafieldsDelete
+const DELETE_TASK_FIELDS_MUTATION = `#graphql
+  mutation DeleteStockTaskFields($metafields: [MetafieldIdentifierInput!]!) {
+    metafieldsDelete(metafields: $metafields) {
+      deletedMetafields {
+        key
+        namespace
+        ownerId
+      }
+      userErrors {
+        field
+        message
+      }
+    }
+  }`;
+
 function parseStatus(raw: string | undefined): TaskStatus {
   return TASK_STATUSES.includes(raw as TaskStatus) ? (raw as TaskStatus) : "new";
 }
@@ -395,8 +412,14 @@ export async function saveTask(
   adminQuery: AdminQueryFn = defaultAdminQuery,
 ): Promise<void> {
   const metafields: Record<string, unknown>[] = [];
-  const push = (key: string, type: string, value: string) =>
-    metafields.push({ ownerId: variantId, namespace: "$app", key, type, value });
+  const cleared: { ownerId: string; namespace: string; key: string }[] = [];
+  const push = (key: string, type: string, value: string) => {
+    if (value.trim() === "") {
+      cleared.push({ ownerId: variantId, namespace: "$app", key });
+    } else {
+      metafields.push({ ownerId: variantId, namespace: "$app", key, type, value });
+    }
+  };
 
   if (patch.status !== undefined) {
     push("task_status", "single_line_text_field", patch.status);
@@ -411,8 +434,12 @@ export async function saveTask(
     push("task_reviewed_at", "date_time", patch.reviewedAt);
   }
 
-  if (metafields.length === 0) return;
-
-  const data = await adminQuery(SAVE_TASK_MUTATION, { metafields });
-  throwUserErrors(data.metafieldsSet);
+  if (metafields.length > 0) {
+    const data = await adminQuery(SAVE_TASK_MUTATION, { metafields });
+    throwUserErrors(data.metafieldsSet);
+  }
+  if (cleared.length > 0) {
+    const data = await adminQuery(DELETE_TASK_FIELDS_MUTATION, { metafields: cleared });
+    throwUserErrors(data.metafieldsDelete);
+  }
 }

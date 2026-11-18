@@ -162,7 +162,9 @@ export default function TaskPage() {
       </s-section>
 
       <s-section heading="Track this task">
+        {/* data-save-bar: App Bridge shows Save / Discard only when a field changes. */}
         <form
+          data-save-bar
           onSubmit={(event) => {
             event.preventDefault();
             fetcher.submit(
@@ -190,11 +192,11 @@ export default function TaskPage() {
               name="status"
               labelAccessibilityVisibility="visible"
               value={draft.status}
-              onChange={(event) =>
-                setDraft((prev) => ({
-                  ...prev,
-                  status: event.currentTarget.value as TaskStatus,
-                }))
+              onChange={(event) => {
+                // Read now: currentTarget is null once the updater runs.
+                const status = event.currentTarget.value as TaskStatus;
+                setDraft((prev) => ({ ...prev, status }));
+              }
               }
             >
               {TASK_STATUSES.map((value) => (
@@ -210,11 +212,11 @@ export default function TaskPage() {
               placeholder="e.g. Mai"
               value={draft.owner}
               details="Used to filter the inbox by person."
-              onInput={(event) =>
-                setDraft((prev) => ({
-                  ...prev,
-                  owner: event.currentTarget.value,
-                }))
+              onInput={(event) => {
+                // Read now: currentTarget is null once the updater runs.
+                const owner = event.currentTarget.value;
+                setDraft((prev) => ({ ...prev, owner }));
+              }
               }
             />
             <s-text-area
@@ -223,19 +225,13 @@ export default function TaskPage() {
               labelAccessibilityVisibility="visible"
               placeholder="e.g. Supplier is out until next week"
               value={draft.note}
-              onInput={(event) =>
-                setDraft((prev) => ({
-                  ...prev,
-                  note: event.currentTarget.value,
-                }))
+              onInput={(event) => {
+                // Read now: currentTarget is null once the updater runs.
+                const note = event.currentTarget.value;
+                setDraft((prev) => ({ ...prev, note }));
+              }
               }
             />
-            <s-button-group>
-              <s-button type="submit" variant="primary" {...(saving ? { loading: true } : {})}>
-                Save
-              </s-button>
-              <s-button type="reset">Discard</s-button>
-            </s-button-group>
           </s-stack>
         </form>
       </s-section>

@@ -186,7 +186,7 @@ export default function InboxPage() {
 
       <s-section heading="Filters">
         <s-stack direction="block" gap="base">
-          <s-button-group>
+          <s-stack direction="inline" gap="small-200">
             {QUICK_FILTERS.map((option) => (
               <s-button
                 key={option.id}
@@ -196,7 +196,7 @@ export default function InboxPage() {
                 {option.label}
               </s-button>
             ))}
-          </s-button-group>
+          </s-stack>
 
           <s-grid gridTemplateColumns="1fr 1fr 1fr 1fr" gap="base">
             <s-search-field

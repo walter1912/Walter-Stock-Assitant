@@ -56,7 +56,9 @@ export default function SettingsPage() {
       </s-link>
 
       <s-section heading="What counts as low stock">
+        {/* data-save-bar: App Bridge shows Save / Discard only when a field changes. */}
         <form
+          data-save-bar
           onSubmit={(event) => {
             event.preventDefault();
             fetcher.submit(
@@ -135,16 +137,6 @@ export default function SettingsPage() {
                 setField("simpleMode", event.currentTarget.checked)
               }
             />
-            <s-button-group>
-              <s-button
-                type="submit"
-                variant="primary"
-                {...(fetcher.state !== "idle" ? { loading: true } : {})}
-              >
-                Save
-              </s-button>
-              <s-button type="reset">Discard</s-button>
-            </s-button-group>
           </s-stack>
         </form>
       </s-section>
